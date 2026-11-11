@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import pawgoLogo from './assets/PawGo.png';
 import { 
   Dog, MapPin, ShieldCheck, Clock, CreditCard, Star, 
   User, CheckCircle, Navigation, Camera, 
-  Calendar, Bell, Square, Sparkles, 
+  Calendar, Bell, Square, Sparkles, PawPrint, Droplets,
   ChevronRight, ArrowLeft, MessageSquare, Send,
   LogOut, Mail, LockKeyhole
 } from 'lucide-react';
@@ -18,13 +19,12 @@ type Pet = {
   reactiveness: string;
   size: string;
   notes: string;
-  photo: string;
 };
 
 // Mock initial data
 const INITIAL_PETS: Pet[] = [
-  { id: 1, name: "Rocco", breed: "Golden Retriever", age: 3, energy: "Alta", reactiveness: "Baja", size: "Grande", notes: "Le encanta correr en el Parque Sarmiento y jugar con pelotas.", photo: "🐕" },
-  { id: 2, name: "Luna", breed: "French Bulldog", age: 2, energy: "Media", reactiveness: "Media", size: "Pequeño", notes: "Sensible al calor, requiere descansos con agua cerca del Buen Pastor.", photo: "🐶" }
+  { id: 1, name: "Rocco", breed: "Golden Retriever", age: 3, energy: "Alta", reactiveness: "Baja", size: "Grande", notes: "Le encanta correr en el Parque Sarmiento y jugar con pelotas." },
+  { id: 2, name: "Luna", breed: "French Bulldog", age: 2, energy: "Media", reactiveness: "Media", size: "Pequeño", notes: "Sensible al calor, requiere descansos con agua cerca del Buen Pastor." }
 ];
 
 type WalkerProfile = {
@@ -96,8 +96,8 @@ const OWNER_ACCOUNTS: OwnerAccount[] = [
     password: 'sofia123',
     name: 'Sofía Martínez',
     pets: [
-      { id: 3, name: 'Mora', breed: 'Caniche', age: 4, energy: 'Media', reactiveness: 'Baja', size: 'Pequeño', notes: 'Le gusta pasear tranquila y parar a tomar agua.', photo: '🐩' },
-      { id: 4, name: 'Pipo', breed: 'Beagle', age: 2, energy: 'Alta', reactiveness: 'Media', size: 'Mediano', notes: 'Es curioso y disfruta explorar plazas nuevas.', photo: '🐶' }
+      { id: 3, name: 'Mora', breed: 'Caniche', age: 4, energy: 'Media', reactiveness: 'Baja', size: 'Pequeño', notes: 'Le gusta pasear tranquila y parar a tomar agua.' },
+      { id: 4, name: 'Pipo', breed: 'Beagle', age: 2, energy: 'Alta', reactiveness: 'Media', size: 'Mediano', notes: 'Es curioso y disfruta explorar plazas nuevas.' }
     ]
   },
   {
@@ -107,8 +107,8 @@ const OWNER_ACCOUNTS: OwnerAccount[] = [
     password: 'diego123',
     name: 'Diego Fernández',
     pets: [
-      { id: 5, name: 'Toto', breed: 'Labrador', age: 5, energy: 'Alta', reactiveness: 'Baja', size: 'Grande', notes: 'Muy sociable; disfruta los paseos largos.', photo: '🦮' },
-      { id: 6, name: 'Nina', breed: 'Mestiza', age: 1, energy: 'Media', reactiveness: 'Media', size: 'Mediano', notes: 'Todavía está aprendiendo a caminar con correa.', photo: '🐕' }
+      { id: 5, name: 'Toto', breed: 'Labrador', age: 5, energy: 'Alta', reactiveness: 'Baja', size: 'Grande', notes: 'Muy sociable; disfruta los paseos largos.' },
+      { id: 6, name: 'Nina', breed: 'Mestiza', age: 1, energy: 'Media', reactiveness: 'Media', size: 'Mediano', notes: 'Todavía está aprendiendo a caminar con correa.' }
     ]
   }
 ];
@@ -150,7 +150,6 @@ type Conversation = {
   paseadorAvatar: string;
   dueñoName: string;
   petName: string;
-  petPhoto: string;
   time: string;
   dueñoUnread: number;
   paseadorUnread: number;
@@ -205,7 +204,6 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
     paseadorAvatar: paseadorS[0].avatar,
     dueñoName: 'Valentina Rodríguez',
     petName: 'Rocco',
-    petPhoto: '🐕',
     time: '16:01',
     dueñoUnread: 0,
     paseadorUnread: 1,
@@ -222,13 +220,12 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
     paseadorAvatar: paseadorS[1].avatar,
     dueñoName: 'Sofía Martínez',
     petName: 'Mora',
-    petPhoto: '🐶',
     time: '14:42',
     dueñoUnread: 0,
     paseadorUnread: 0,
     messages: [
       { id: 1, sender: 'paseador', text: 'Mora ya tomó agua y estamos volviendo. El paseo salió genial.', time: '14:38' },
-      { id: 2, sender: 'dueño', text: '¡Qué bueno! Muchas gracias por cuidarla 😊', time: '14:42' }
+      { id: 2, sender: 'dueño', text: '¡Qué bueno! Muchas gracias por cuidarla.', time: '14:42' }
     ]
   },
   {
@@ -239,7 +236,6 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
     paseadorAvatar: paseadorS[2].avatar,
     dueñoName: 'Diego Fernández',
     petName: 'Toto',
-    petPhoto: '🦮',
     time: 'Ayer',
     dueñoUnread: 0,
     paseadorUnread: 0,
@@ -342,7 +338,7 @@ export default function App() {
         appendConversationMessage(
           walk.conversationId,
           'paseador',
-          `¡Paseo finalizado! ${walk.pet.name} ya volvió a casa. Gracias por confiar en mí 🐾`
+          `¡Paseo finalizado! ${walk.pet.name} ya volvió a casa. Gracias por confiar en mí.`
         );
       });
   }, [activeWalks, appendConversationMessage]);
@@ -449,7 +445,6 @@ export default function App() {
           paseadorAvatar: selectedpaseador.avatar,
           dueñoName: currentUser.name,
           petName: selectedPet.name,
-          petPhoto: selectedPet.photo,
           time: 'Ahora',
           dueñoUnread: 0,
           paseadorUnread: 0,
@@ -509,7 +504,7 @@ export default function App() {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newReport = type === 'photo' 
       ? { time: timeStr, text: "¡Parada de descanso con agua cerca del Buen Pastor!", img: "https://images.unsplash.com/photo-1534361960057-19889db9621e?auto=format&fit=crop&w=400&q=80" }
-      : { time: timeStr, text: "💩 Realizó sus necesidades de forma normal en Plaza España.", img: null };
+      : { time: timeStr, text: "Realizó sus necesidades de forma normal en Plaza España.", img: null };
     
     setActiveWalks((previous) => previous.map((item) =>
       item.id === walkId ? { ...item, photos: [newReport, ...item.photos] } : item
@@ -649,10 +644,10 @@ export default function App() {
       <div className="pawgo-login-screen">
         <div className="w-full max-w-sm">
           <div className="text-center mb-6">
-            <div className="pawgo-brand-mark">
-              <Dog className="w-8 h-8" />
+            <div className="pawgo-login-brand">
+              <img src={pawgoLogo} alt="Logo de PawGo" />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">PawGo</h1>
+            <h1 className="pawgo-login-title">PawGo</h1>
             <p className="text-sm text-slate-400 mt-1">La felicidad de tu mascota, a la palma de tu mano.</p>
           </div>
 
@@ -778,14 +773,13 @@ export default function App() {
       {/* GLOBAL TOP NAVIGATION */}
       <header className="pawgo-header">
         <div className="flex items-center gap-2">
-          <div className="bg-gradient-to-tr from-violet-600 to-amber-500 p-2 rounded-xl text-white shadow">
-            <Dog className="w-6 h-6" />
-          </div>
+          <span className="pawgo-header-logo">
+            <img src={pawgoLogo} alt="PawGo" />
+          </span>
           <div>
-            <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-violet-400 to-amber-300 bg-clip-text text-transparent">
-              PawGo
+            <span className="flex items-center gap-1 text-[10px] text-amber-400 font-medium -mt-1">
+              <MapPin className="h-3 w-3" /> Córdoba, Argentina
             </span>
-            <span className="text-[10px] block text-amber-400 font-medium -mt-1">📍 Córdoba, Argentina</span>
           </div>
         </div>
 
@@ -822,7 +816,9 @@ export default function App() {
                   <span className="text-violet-200 text-xs font-medium">
                     ¡Hola, {currentUser?.role === 'dueño' ? currentUser.name.split(' ')[0] : 'familia'}!
                   </span>
-                  <h1 className="text-xl font-bold">Paseos en Córdoba 🐾</h1>
+                  <h1 className="flex items-center gap-2 text-xl font-bold">
+                    Paseos en Córdoba <PawPrint className="h-5 w-5 text-amber-300" aria-hidden="true" />
+                  </h1>
                 </div>
                 <div className="bg-white/20 backdrop-blur-md p-2 rounded-full border border-white/20">
                   <Bell className="w-5 h-5 text-white" />
@@ -841,7 +837,7 @@ export default function App() {
                         : 'bg-white/15 text-white hover:bg-white/25'
                     }`}
                   >
-                    <span>{pet.photo}</span>
+                    <Dog className="h-4 w-4" aria-hidden="true" />
                     <span>{pet.name}</span>
                   </button>
                 ))}
@@ -850,12 +846,12 @@ export default function App() {
 
             {/* TAB CONTENT: HOME / MAP */}
             {dueñoTab === 'home' && (
-              <div className="p-4 space-y-5 flex-1">
+              <div className="pawgo-owner-home p-4 space-y-5 flex-1">
                 {/* Active Walk Floating Notification Banner */}
                 {visibleActiveWalk && (
                   <div 
                     onClick={() => setdueñoTab('active')}
-                    className={`text-white p-3.5 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer ${
+                    className={`pawgo-home-active text-white p-3.5 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer ${
                       visibleActiveWalk.status === 'finished'
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
                         : visibleActiveWalk.status === 'requested'
@@ -883,10 +879,10 @@ export default function App() {
                 )}
 
                 {/* Pet Profile Box */}
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div className="pawgo-home-pet bg-slate-50 p-4 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">{selectedPet.photo}</span>
+                      <Dog className="h-7 w-7 text-violet-600" aria-hidden="true" />
                       <div>
                         <h3 className="font-bold text-slate-900 text-sm">{selectedPet.name}</h3>
                         <p className="text-xs text-slate-500">{selectedPet.breed} • {selectedPet.age} años</p>
@@ -904,7 +900,7 @@ export default function App() {
                 {/* Córdoba map mock */}
                 <div
                   onMouseLeave={() => setHoveredMapWalkerId(null)}
-                  className="bg-slate-100 rounded-3xl p-3 border border-slate-200 shadow-inner relative overflow-hidden h-[380px] flex flex-col justify-between"
+                  className="pawgo-home-map bg-slate-100 rounded-3xl p-3 border border-slate-200 shadow-inner relative overflow-hidden h-[380px] flex flex-col justify-between"
                 >
                   <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
                     {[
@@ -931,7 +927,7 @@ export default function App() {
                       <span>Nueva Córdoba / Güemes</span>
                     </div>
                     <span className="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full text-[10px]">
-                      🇦🇷 Córdoba Capital
+                      Córdoba Capital
                     </span>
                   </div>
 
@@ -996,7 +992,7 @@ export default function App() {
                 </div>
 
                 {/* Near paseadors List */}
-                <div>
+                <div className="pawgo-home-walkers">
                   <h3 className="font-bold text-sm text-slate-900 mb-3 flex items-center justify-between">
                     <span>Paseadores Verificados en Córdoba</span>
                   </h3>
@@ -1323,7 +1319,7 @@ export default function App() {
                                 <img src={item.img} alt="report" className="w-14 h-14 rounded-xl object-cover" />
                               ) : (
                                 <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center font-bold text-xl">
-                                  💩
+                                  <Droplets className="h-6 w-6" aria-hidden="true" />
                                 </div>
                               )}
                               <div className="flex-1">
@@ -1442,7 +1438,7 @@ export default function App() {
                             }}
                             className="pawgo-paseador-chat-list-item"
                           >
-                            <span className="pawgo-paseador-chat-avatar">{chat.petPhoto}</span>
+                            <span className="pawgo-paseador-chat-avatar"><Dog className="h-6 w-6" aria-hidden="true" /></span>
                             <span className="pawgo-paseador-chat-preview">
                               <span className="pawgo-paseador-chat-preview-top">
                                 <span>
@@ -1590,7 +1586,7 @@ export default function App() {
                   {pets.map((p) => (
                     <div key={p.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{p.photo}</span>
+                        <Dog className="h-6 w-6 text-violet-600" aria-hidden="true" />
                         <div>
                           <p className="font-bold text-xs text-slate-900">{p.name}</p>
                           <p className="text-[10px] text-slate-500">{p.breed}</p>
@@ -1614,7 +1610,7 @@ export default function App() {
             )}
 
             {/* dueño BOTTOM TAB BAR */}
-            <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-2 flex justify-around items-center z-40">
+            <nav className="pawgo-bottom-nav flex items-center justify-around" aria-label="Navegación del dueño">
               {[
                 { id: 'home', label: 'Inicio', icon: MapPin },
                 { id: 'active', label: 'En Vivo', icon: Navigation, badge: visibleActiveWalk ? '!' : null },
@@ -1666,7 +1662,11 @@ export default function App() {
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   </div>
                   <p className="text-xs text-slate-400">
-                    Paseador Verificado • Córdoba ⭐ {currentWalker?.rating ?? paseadorS[0].rating}
+                    <span className="flex items-center gap-1">
+                      Paseador Verificado · Córdoba
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-label="Calificación" />
+                      {currentWalker?.rating ?? paseadorS[0].rating}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -1748,7 +1748,7 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{walk.pet.photo}</span>
+                    <Dog className="h-8 w-8 text-amber-600" aria-hidden="true" />
                     <div>
                       <h4 className="font-bold text-sm text-slate-900">Mascota: {walk.pet.name}</h4>
                       <p className="text-xs text-slate-500">{walk.pet.breed} • {walk.type}</p>
@@ -1779,7 +1779,7 @@ export default function App() {
               <div key={walk.id} className="pawgo-paseador-card">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{walk.pet.photo}</span>
+                    <Dog className="h-7 w-7 text-violet-600" aria-hidden="true" />
                     <div>
                       <h3 className="font-bold text-sm text-slate-900">En paseo con {walk.pet.name}</h3>
                       <p className="text-xs text-slate-500">{walk.type}</p>
@@ -1803,7 +1803,7 @@ export default function App() {
                       onClick={() => handleAddpaseadorReport(walk.id, 'poop')}
                       className="bg-white hover:bg-slate-100 border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-center gap-1.5 shadow-sm"
                     >
-                      <span>💩</span> Reportar Pipi/Pó
+                      <Droplets className="h-4 w-4" aria-hidden="true" /> Reportar Pipi/Pó
                     </button>
                   </div>
                 </div>
@@ -1849,7 +1849,9 @@ export default function App() {
                             }}
                             className="pawgo-paseador-chat-list-item"
                           >
-                            <span className="pawgo-paseador-chat-avatar">{chat.petPhoto}</span>
+                            <span className="pawgo-paseador-chat-avatar">
+                              <Dog className="h-6 w-6" aria-hidden="true" />
+                            </span>
                             <span className="pawgo-paseador-chat-preview">
                               <span className="pawgo-paseador-chat-preview-top">
                                 <span>
@@ -1879,7 +1881,7 @@ export default function App() {
                         <ArrowLeft className="w-4 h-4" />
                       </button>
                       <span className="pawgo-paseador-chat-avatar pawgo-paseador-chat-avatar-small">
-                        {selectedpaseadorChat.petPhoto}
+                        <Dog className="h-6 w-6" aria-hidden="true" />
                       </span>
                       <div>
                         <h2 className="pawgo-paseador-chat-dueño">{selectedpaseadorChat.dueñoName}</h2>

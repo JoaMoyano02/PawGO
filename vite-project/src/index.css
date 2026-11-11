@@ -21,6 +21,47 @@
     @apply inline-flex items-center justify-center bg-gradient-to-tr from-violet-600 to-amber-500 p-3 rounded-2xl text-white shadow-lg mb-3;
   }
 
+  .pawgo-login-brand {
+    position: relative;
+    width: 184px;
+    height: 184px;
+    margin: 0 auto 8px;
+    overflow: hidden;
+    border-radius: 32px;
+    box-shadow: 0 16px 40px rgb(124 58 237 / 25%);
+  }
+
+  .pawgo-login-title {
+    @apply text-3xl font-extrabold tracking-tight text-white;
+  }
+
+  .pawgo-login-brand img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 591%;
+    max-width: none;
+    transform: translate(-51.4%, -37.9%);
+  }
+
+  .pawgo-header-logo {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
+    border-radius: 10px;
+    flex: none;
+  }
+
+  .pawgo-header-logo img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 591%;
+    max-width: none;
+    transform: translate(-51.4%, -37.9%);
+  }
+
   .pawgo-login-role {
     @apply p-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition;
   }
@@ -356,4 +397,181 @@
   .pawgo-paseador-nav-unread {
     @apply absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500;
   }
+}
+
+@layer base {
+  html {
+    min-width: 320px;
+    background: #f1f5f9;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+.pawgo-app-shell {
+  width: 100%;
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.pawgo-header {
+  width: 100%;
+  max-width: none;
+  padding: 12px clamp(16px, 4vw, 48px);
+}
+
+.pawgo-main {
+  width: 100%;
+  max-width: 1440px;
+  min-height: calc(100vh - 60px);
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  margin-inline: auto;
+  box-shadow: none;
+}
+
+.pawgo-paseador-chat-window {
+  height: min(72vh, 800px);
+  min-height: 320px;
+}
+
+@media (min-width: 768px) {
+  .pawgo-main {
+    min-height: calc(100vh - 64px);
+  }
+
+  .pawgo-dueño-content {
+    width: min(100%, 1120px);
+    margin-inline: auto;
+    padding: 28px clamp(24px, 4vw, 56px);
+  }
+
+  .pawgo-owner-home {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 24px;
+    width: 100%;
+    max-width: 1360px;
+    margin-inline: auto;
+    padding: 28px clamp(24px, 4vw, 56px);
+  }
+
+  .pawgo-owner-home > *,
+  .pawgo-paseador-view > * + * {
+    margin-block-start: 0;
+  }
+
+  .pawgo-home-active,
+  .pawgo-home-pet {
+    grid-column: 1 / -1;
+  }
+
+  .pawgo-home-map {
+    grid-column: 1;
+    height: clamp(420px, 42vw, 560px);
+  }
+
+  .pawgo-home-walkers {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .pawgo-dueño-view > .p-4.space-y-4 {
+    width: min(100%, 960px);
+    margin-inline: auto;
+    padding: 28px clamp(24px, 4vw, 56px);
+  }
+
+  .pawgo-paseador-view {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 20px;
+    width: 100%;
+    max-width: 1320px;
+    margin-inline: auto;
+    padding: 28px clamp(24px, 4vw, 56px) 40px;
+  }
+
+  .pawgo-paseador-header,
+  .pawgo-paseador-stats,
+  .pawgo-paseador-chat-section {
+    grid-column: 1 / -1;
+  }
+
+  .pawgo-paseador-stats {
+    gap: 16px;
+  }
+
+  .pawgo-review-list {
+    max-height: 560px;
+  }
+
+  .pawgo-paseador-chat-window {
+    height: min(72vh, 800px);
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 767px) {
+  .pawgo-owner-home {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .pawgo-header {
+    min-height: 60px;
+  }
+
+  .pawgo-main {
+    min-height: calc(100vh - 60px);
+  }
+}
+
+@media (max-width: 380px) {
+  .pawgo-header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .pawgo-home-map {
+    height: 320px;
+  }
+
+  .pawgo-dueño-content,
+  .pawgo-paseador-view {
+    padding-inline: 12px;
+  }
+}
+
+.pawgo-bottom-nav,
+.pawgo-paseador-bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  inset-block-start: auto;
+  z-index: 60;
+  width: 100%;
+  min-height: 68px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e2e8f0;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 -8px 24px rgb(15 23 42 / 8%);
+  backdrop-filter: blur(12px);
+}
+
+.pawgo-bottom-nav > button,
+.pawgo-paseador-bottom-nav > button {
+  min-width: 56px;
+  min-height: 48px;
+  justify-content: center;
 }
