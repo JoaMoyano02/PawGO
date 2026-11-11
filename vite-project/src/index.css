@@ -54,15 +54,41 @@
   }
 
   .pawgo-login-submit {
-    @apply w-full font-extrabold py-3.5 rounded-xl shadow-md transition;
+    @apply relative isolate w-full overflow-hidden font-extrabold py-3.5 rounded-xl shadow-md transition-shadow duration-300;
+  }
+
+  .pawgo-login-submit::before,
+  .pawgo-login-submit::after {
+    content: "";
+    @apply absolute inset-0 -z-10 transition-opacity duration-500 ease-in-out;
   }
 
   .pawgo-login-submit-dueño {
-    @apply bg-violet-600 hover:bg-violet-700 text-white;
+    @apply text-white;
+  }
+
+  .pawgo-login-submit-dueño::before {
+    @apply bg-gradient-to-r from-violet-700 via-violet-600 to-fuchsia-600 opacity-100;
+  }
+
+  .pawgo-login-submit-dueño::after {
+    @apply bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 opacity-0;
   }
 
   .pawgo-login-submit-paseador {
-    @apply bg-amber-400 hover:bg-amber-500 text-gray-900;
+    @apply text-slate-950;
+  }
+
+  .pawgo-login-submit-paseador::before {
+    @apply bg-gradient-to-r from-violet-700 via-violet-600 to-fuchsia-600 opacity-0;
+  }
+
+  .pawgo-login-submit-paseador::after {
+    @apply bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 opacity-100;
+  }
+
+  .pawgo-login-submit > span {
+    @apply relative z-10;
   }
 
   .pawgo-app-shell {
@@ -152,11 +178,11 @@
   }
 
   .pawgo-review-list {
-    @apply space-y-2;
+    @apply max-h-[32rem] space-y-2 overflow-y-auto overscroll-contain pr-1;
   }
 
   .pawgo-review {
-    @apply bg-white border border-slate-200 rounded-2xl p-3 space-y-2;
+    @apply h-24 shrink-0 overflow-hidden bg-white border border-slate-200 rounded-2xl p-3 space-y-2;
   }
 
   .pawgo-review-author {
@@ -180,7 +206,7 @@
   }
 
   .pawgo-review-comment {
-    @apply text-xs leading-relaxed text-slate-600;
+    @apply line-clamp-2 text-xs leading-relaxed text-slate-600;
   }
 
   .pawgo-paseador-chat-section {

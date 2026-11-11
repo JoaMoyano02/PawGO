@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Dog, MapPin, ShieldCheck, Clock, CreditCard, Star, 
   User, CheckCircle, Navigation, Camera, 
@@ -178,6 +178,23 @@ type ActiveWalk = {
   photos: WalkPhoto[];
 };
 
+type WalkerReview = {
+  id: number;
+  walkId: number;
+  walkerId: number;
+  rating: number;
+  date: string;
+  comment: string;
+};
+
+type ReviewDisplay = {
+  id: number;
+  walkId?: number;
+  rating: number;
+  date: string;
+  comment: string;
+};
+
 //CONVERSACIONES INICIALES
 const INITIAL_CONVERSATIONS: Conversation[] = [
   {
@@ -249,7 +266,23 @@ export default function App() {
   const [selectedpaseador, setSelectedpaseador] = useState(paseadorS[0]);
   const [selectedMapWalkerId, setSelectedMapWalkerId] = useState<number | null>(null);
   const [hoveredMapWalkerId, setHoveredMapWalkerId] = useState<number | null>(null);
+  const [selectedReviewsWalkerId, setSelectedReviewsWalkerId] = useState<number | null>(null);
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('');
+  const [walkerReviews, setWalkerReviews] = useState<WalkerReview[]>([]);
+  const [walkerRatings, setWalkerRatings] = useState<Record<number, number>>(() =>
+    paseadorS.reduce<Record<number, number>>((ratings, walker) => {
+      ratings[walker.id] = walker.rating;
+      return ratings;
+    }, {})
+  );
+  const [walkerReviewCounts, setWalkerReviewCounts] = useState<Record<number, number>>(() =>
+    paseadorS.reduce<Record<number, number>>((counts, walker) => {
+      counts[walker.id] = 48;
+      return counts;
+    }, {})
+  );
+  const [walkReviewRatings, setWalkReviewRatings] = useState<Record<number, number>>({});
+  const [walkReviewComments, setWalkReviewComments] = useState<Record<number, string>>({});
   const [isImmediate, setIsImmediate] = useState(true);
 
   // Shared Active Walk State
@@ -262,11 +295,18 @@ export default function App() {
   // paseador App State
   const [isOnline, setIsOnline] = useState(true);
   const [paseadorEarnings, setpaseadorEarnings] = useState(52400);
+  const [walkerWalkCounts, setWalkerWalkCounts] = useState<Record<number, number>>(() =>
+    paseadorS.reduce<Record<number, number>>((counts, walker) => {
+      counts[walker.id] = walker.walksDone;
+      return counts;
+    }, {})
+  );
+  const completedWalksProcessed = useRef(new Set<number>());
   const [paseadorTab, setpaseadorTab] = useState<'home' | 'chats'>('home');
   const [selectedpaseadorChatId, setSelectedpaseadorChatId] = useState<number | null>(null);
   const [paseadorChatDraft, setpaseadorChatDraft] = useState('');
 
-  const appendConversationMessage = (
+  const appendConversationMessage = useCallback((
     conversationId: number,
     sender: UserRole,
     text: string,
@@ -287,11 +327,43 @@ export default function App() {
           : conversation
       )
     );
-  };
+  }, []);
 
+  useEffect(() => {
+    activeWalks
+      .filter((walk) => walk.status === 'finished' && !completedWalksProcessed.current.has(walk.id))
+      .forEach((walk) => {
+        completedWalksProcessed.current.add(walk.id);
+        setpaseadorEarnings((previous) => previous + walk.price);
+        setWalkerWalkCounts((previous) => ({
+          ...previous,
+          [walk.paseador.id]: (previous[walk.paseador.id] ?? walk.paseador.walksDone) + 1
+        }));
+        appendConversationMessage(
+          walk.conversationId,
+          'paseador',
+          `¡Paseo finalizado! ${walk.pet.name} ya volvió a casa. Gracias por confiar en mí 🐾`
+        );
+      });
+  }, [activeWalks, appendConversationMessage]);
+
+  const walkersWithWalkCounts = paseadorS.map((walker) => ({
+    ...walker,
+    walksDone: walkerWalkCounts[walker.id] ?? walker.walksDone,
+    rating: walkerRatings[walker.id] ?? walker.rating
+  }));
   const currentWalker = role === 'paseador' && currentUser?.role === 'paseador'
-    ? paseadorS.find((walker) => walker.id === currentUser.walkerId) ?? null
+    ? walkersWithWalkCounts.find((walker) => walker.id === currentUser.walkerId) ?? null
     : null;
+  const currentWalkerReviews: ReviewDisplay[] = currentWalker
+    ? [
+        ...walkerReviews
+          .filter((review) => review.walkerId === currentWalker.id)
+          .reverse()
+          .map(({ id, walkId, rating, date, comment }) => ({ id, walkId, rating, date, comment })),
+        ...paseador_REVIEWS.map((review) => ({ ...review }))
+      ]
+    : paseador_REVIEWS;
   const visibleConversations = conversations.filter((conversation) =>
     role === 'dueño'
       ? currentUser?.role === 'dueño' && conversation.ownerId === currentUser.id
@@ -306,11 +378,24 @@ export default function App() {
   const walkerActiveWalks = role === 'paseador' && currentUser?.role === 'paseador'
     ? activeWalks.filter((walk) => walk.paseador.id === currentUser.walkerId)
     : [];
-  const selectedMapWalker = paseadorS.find((walker) => walker.id === selectedMapWalkerId) ?? null;
+  const selectedMapWalker = walkersWithWalkCounts.find((walker) => walker.id === selectedMapWalkerId) ?? null;
   const displayedMapWalkerId = hoveredMapWalkerId ?? selectedMapWalkerId;
-  const filteredWalkers = paseadorS.filter((walker) =>
+  const filteredWalkers = walkersWithWalkCounts.filter((walker) =>
     !neighborhoodFilter || walker.neighborhoods.includes(neighborhoodFilter)
   );
+  const selectedReviewsWalker = walkersWithWalkCounts.find((walker) => walker.id === selectedReviewsWalkerId) ?? null;
+  const selectedWalkerReviews: ReviewDisplay[] = selectedReviewsWalker
+    ? [
+        ...walkerReviews
+          .filter((review) => review.walkerId === selectedReviewsWalker.id)
+          .reverse()
+          .map(({ id, walkId, rating, date, comment }) => ({ id, walkId, rating, date, comment })),
+        ...paseador_REVIEWS.map((review) => ({ ...review }))
+      ]
+    : [];
+  const submittedReviewForWalk = visibleActiveWalk
+    ? walkerReviews.find((review) => review.walkId === visibleActiveWalk.id)
+    : undefined;
 
   // Timer simulation for active walk
   useEffect(() => {
@@ -447,11 +532,45 @@ export default function App() {
       || walk.paseador.id !== currentUser.walkerId
       || walk.status !== 'in_progress'
     ) return;
-    setpaseadorEarnings((prev) => prev + walk.price);
-    setpaseadorCompletedWalks((prev) => prev + 1);
     setActiveWalks((previous) => previous.map((item) =>
       item.id === walkId ? { ...item, status: 'finished' } : item
     ));
+  };
+
+  const handleSubmitWalkReview = (walkId: number) => {
+    const walk = activeWalks.find((item) => item.id === walkId);
+    const rating = walkReviewRatings[walkId] ?? 0;
+    if (
+      !walk
+      || currentUser?.role !== 'dueño'
+      || walk.ownerId !== currentUser.id
+      || walk.status !== 'finished'
+      || rating < 1
+      || rating > 5
+      || walkerReviews.some((review) => review.walkId === walkId)
+    ) return;
+
+    const review: WalkerReview = {
+      id: Date.now(),
+      walkId,
+      walkerId: walk.paseador.id,
+      rating,
+      date: 'Hoy',
+      comment: walkReviewComments[walkId]?.trim() ?? ''
+    };
+    const previousCount = walkerReviewCounts[walk.paseador.id] ?? 48;
+    const previousRating = walkerRatings[walk.paseador.id] ?? walk.paseador.rating;
+    setWalkerReviews((previous) => [...previous, review]);
+    setWalkerRatings((previous) => ({
+      ...previous,
+      [walk.paseador.id]: Number(((previousRating * previousCount + rating) / (previousCount + 1)).toFixed(1))
+    }));
+    setWalkerReviewCounts((previous) => ({
+      ...previous,
+      [walk.paseador.id]: previousCount + 1
+    }));
+    setSelectedReviewsWalkerId(walk.paseador.id);
+    setdueñoTab('reviews');
   };
 
   const handleClearWalk = (walkId: number) => {
@@ -620,7 +739,7 @@ export default function App() {
                   : 'pawgo-login-submit-paseador'
               }`}
             >
-              Entrar como {role === 'dueño' ? 'dueño' : 'paseador'}
+              <span>Entrar como {role === 'dueño' ? 'dueño' : 'paseador'}</span>
             </button>
             {loginError && (
               <p role="alert" className="text-center text-xs font-semibold text-red-600">
@@ -736,14 +855,26 @@ export default function App() {
                 {visibleActiveWalk && (
                   <div 
                     onClick={() => setdueñoTab('active')}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-3.5 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer animate-pulse"
+                    className={`text-white p-3.5 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer ${
+                      visibleActiveWalk.status === 'finished'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
+                        : visibleActiveWalk.status === 'requested'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500 animate-pulse'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="bg-white/20 p-2 rounded-xl">
                         <Navigation className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-amber-100">Paseo en progreso</p>
+                        <p className="text-xs font-semibold text-white/80">
+                          {visibleActiveWalk.status === 'finished'
+                            ? 'Paseo finalizado'
+                            : visibleActiveWalk.status === 'requested'
+                            ? 'Esperando confirmación'
+                            : 'Paseo en progreso'}
+                        </p>
                         <p className="text-sm font-bold">{visibleActiveWalk.pet.name} con {visibleActiveWalk.paseador.name}</p>
                       </div>
                     </div>
@@ -817,7 +948,7 @@ export default function App() {
 
                   {/* Simulated paseador Markers on Map */}
                   <div className="absolute inset-0 z-10 pointer-events-none">
-                    {paseadorS.map((w) => (
+                    {walkersWithWalkCounts.map((w) => (
                       <div
                         key={w.id} 
                         onMouseEnter={() => setHoveredMapWalkerId(w.id)}
@@ -902,12 +1033,23 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                        <button 
-                          onClick={() => { setSelectedpaseador(w); setdueñoTab('book'); }}
-                          className="bg-violet-100 hover:bg-violet-200 text-violet-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
-                        >
-                          Elegir
-                        </button>
+                        <div className="flex shrink-0 flex-col gap-1.5">
+                          <button
+                            onClick={() => {
+                              setSelectedReviewsWalkerId(w.id);
+                              setdueñoTab('reviews');
+                            }}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
+                          >
+                            Reseñas
+                          </button>
+                          <button 
+                            onClick={() => { setSelectedpaseador(w); setdueñoTab('book'); }}
+                            className="bg-violet-100 hover:bg-violet-200 text-violet-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
+                          >
+                            Elegir
+                          </button>
+                        </div>
                       </div>
                     ))}
                     {filteredWalkers.length === 0 && (
@@ -918,6 +1060,55 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {dueñoTab === 'reviews' && selectedReviewsWalker && (
+              <section className="pawgo-dueño-content">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setdueñoTab('home')}
+                    className="p-1.5 bg-slate-100 rounded-xl hover:bg-slate-200"
+                    aria-label="Volver al inicio"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-slate-700" />
+                  </button>
+                  <h2 className="font-bold text-slate-900 text-base">Reseñas del paseador</h2>
+                </div>
+
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-2xl border border-violet-200 flex items-center gap-3">
+                  <img src={selectedReviewsWalker.avatar} alt={selectedReviewsWalker.name} className="w-14 h-14 rounded-2xl object-cover" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-slate-900">{selectedReviewsWalker.name}</h3>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      <span className="font-extrabold text-slate-900">{selectedReviewsWalker.rating.toFixed(1)}</span>
+                      <span className="text-xs text-slate-500">· {walkerReviewCounts[selectedReviewsWalker.id] ?? 48} reseñas</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pawgo-review-list">
+                  {selectedWalkerReviews.map((review) => (
+                    <article key={review.walkId ? `walk-${review.walkId}` : `mock-${review.id}`} className="pawgo-review">
+                      <div className="pawgo-review-heading">
+                        <div>
+                          <p className="pawgo-review-author">Usuario anónimo</p>
+                          <p className="pawgo-review-date">{review.date}</p>
+                        </div>
+                        <div className="pawgo-review-rating" aria-label={`${review.rating} de 5 estrellas`}>
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star
+                              key={index}
+                              className={`pawgo-review-star ${index < review.rating ? 'pawgo-review-star-filled' : ''}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="pawgo-review-comment">{review.comment || 'Sin comentario.'}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* TAB CONTENT: BOOKING FORM */}
@@ -1144,6 +1335,79 @@ export default function App() {
                         </div>
                       )}
                     </div>
+
+                    {visibleActiveWalk.status === 'finished' && (
+                      submittedReviewForWalk ? (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2">
+                          <p className="font-bold text-sm text-emerald-800">¡Gracias por tu reseña!</p>
+                          <p className="text-xs text-emerald-700">Tu puntuación ya aparece en las reseñas de {visibleActiveWalk.paseador.name}.</p>
+                          <button
+                            onClick={() => {
+                              setSelectedReviewsWalkerId(visibleActiveWalk.paseador.id);
+                              setdueñoTab('reviews');
+                            }}
+                            className="text-xs font-bold text-violet-700 underline"
+                          >
+                            Ver reseñas del paseador
+                          </button>
+                        </div>
+                      ) : (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            handleSubmitWalkReview(visibleActiveWalk.id);
+                          }}
+                          className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3"
+                        >
+                          <div>
+                            <h3 className="font-bold text-sm text-slate-900">¿Cómo estuvo el paseo?</h3>
+                            <p className="text-xs text-slate-600">Calificá a {visibleActiveWalk.paseador.name}.</p>
+                          </div>
+                          <div className="flex items-center gap-1" role="group" aria-label="Calificación del paseo">
+                            {Array.from({ length: 5 }, (_, index) => {
+                              const rating = index + 1;
+                              const selectedRating = walkReviewRatings[visibleActiveWalk.id] ?? 0;
+                              return (
+                                <button
+                                  key={rating}
+                                  type="button"
+                                  onClick={() => setWalkReviewRatings((previous) => ({
+                                    ...previous,
+                                    [visibleActiveWalk.id]: rating
+                                  }))}
+                                  aria-label={`${rating} ${rating === 1 ? 'estrella' : 'estrellas'}`}
+                                  aria-pressed={selectedRating === rating}
+                                  className="p-1"
+                                >
+                                  <Star className={`w-7 h-7 transition-colors ${rating <= selectedRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <label className="block">
+                            <span className="block text-xs font-semibold text-slate-700 mb-1">Comentario (opcional)</span>
+                            <textarea
+                              value={walkReviewComments[visibleActiveWalk.id] ?? ''}
+                              onChange={(event) => setWalkReviewComments((previous) => ({
+                                ...previous,
+                                [visibleActiveWalk.id]: event.target.value
+                              }))}
+                              rows={3}
+                              maxLength={400}
+                              placeholder="Contanos cómo fue la experiencia..."
+                              className="w-full resize-none rounded-xl border border-amber-200 bg-white p-3 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-amber-300"
+                            />
+                          </label>
+                          <button
+                            type="submit"
+                            disabled={!walkReviewRatings[visibleActiveWalk.id]}
+                            className="w-full rounded-xl bg-violet-600 py-2.5 text-xs font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Enviar reseña
+                          </button>
+                        </form>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -1444,11 +1708,13 @@ export default function App() {
                 </div>
               </div>
 
-              <p className="pawgo-reviews-count">48 reseñas · Identidad protegida</p>
+              <p className="pawgo-reviews-count">
+                {walkerReviewCounts[currentWalker?.id ?? paseadorS[0].id] ?? 48} reseñas · Identidad protegida
+              </p>
 
               <div className="pawgo-review-list">
-                {paseador_REVIEWS.map((review) => (
-                  <article key={review.id} className="pawgo-review">
+                {currentWalkerReviews.map((review) => (
+                  <article key={'walkId' in review ? review.walkId : `mock-${review.id}`} className="pawgo-review">
                     <div className="pawgo-review-heading">
                       <div>
                         <p className="pawgo-review-author">Usuario anónimo</p>
@@ -1464,7 +1730,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    <p className="pawgo-review-comment">{review.comment}</p>
+                    <p className="pawgo-review-comment">{review.comment || 'Sin comentario.'}</p>
                   </article>
                 ))}
               </div>
@@ -1472,7 +1738,7 @@ export default function App() {
 
             {/* INCOMING REQUEST CARD */}
             {walkerActiveWalks.filter((walk) => walk.status === 'requested').map((walk) => (
-              <div key={walk.id} className="bg-gradient-to-r from-amber-500 to-orange-500 p-0.5 rounded-3xl shadow-xl animate-bounce">
+              <div key={walk.id} className="bg-gradient-to-r from-amber-500 to-orange-500 p-0.5 rounded-3xl shadow-xl animate-pulse">
                 <div className="bg-white p-4 rounded-[22px] space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase">
